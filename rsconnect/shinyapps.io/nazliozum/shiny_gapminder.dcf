@@ -1,0 +1,12 @@
+name: shiny_gapminder
+title: shiny_gapminder
+username:
+account: nazliozum
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 254139
+bundleId: 1165748
+url: https://nazliozum.shinyapps.io/shiny_gapminder/
+when: 1515347125.88077
+asMultiple: FALSE
+asStatic: FALSE

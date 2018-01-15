@@ -1,0 +1,13 @@
+name: shiny_happiness
+title: shiny_happiness
+username:
+account: nazliozum
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 256290
+bundleId: 1172908
+url: https://nazliozum.shinyapps.io/shiny_happiness/
+when: 1515730017.40375
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: visualization_draft.Rmd|data/.DS_Store|data/happiness_2016.csv|data/happiness_2017.csv
