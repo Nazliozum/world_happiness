@@ -11,9 +11,9 @@ library(readr)
 # Import raw data
 ##################
 
-happiness2017 <- read_csv("../data/happiness_2017.csv")
-happiness2016 <- read_csv("../data/happiness_2016.csv")
-happiness2015 <- read_csv("../data/happiness_2015.csv")
+happiness2017 <- read_csv("data/happiness_2017.csv")
+happiness2016 <- read_csv("data/happiness_2016.csv")
+happiness2015 <- read_csv("data/happiness_2015.csv")
 
 
 ##################
@@ -78,11 +78,26 @@ names(happiness2017) <- c("Country", "Region", "Happiness.Rank",
 ## Get rid of columns that will not be used in the app
 happiness2017 <- happiness2017 %>% select(-c(Whisker.High, Whisker.Low, Region.y))
 
+##################
+# Aggregation of countries for the filtering buttons
+##################
+countries_2015 <- happiness2015 %>% 
+  select(Country, Region)
+countries_2016 <- happiness2016 %>% 
+  select(Country, Region)
+countries_2017 <- happiness2017 %>% 
+  select(Country, Region)
+
+diff_2016 <- anti_join(countries_2016, countries_2015, by = "Country")
+countries_1516 <- rbind(countries_2015, diff_2016)
+diff_2017 <- anti_join(countries_2017, countries_1516, by = "Country")
+countries_all <- rbind(countries_1516, diff_2017)
 
 ##############
 # Export data
 ##############
-write_csv(happiness2015, "../results/happiness_2015_clean.csv")
-write_csv(happiness2016, "../results/happiness_2016_clean.csv")
-write_csv(happiness2017, "../results/happiness_2017_clean.csv")
+write_csv(happiness2015, "results/happiness_2015_clean.csv")
+write_csv(happiness2016, "results/happiness_2016_clean.csv")
+write_csv(happiness2017, "results/happiness_2017_clean.csv")
+write_csv(countries_all, "results/countries_aggregated.csv")
 
