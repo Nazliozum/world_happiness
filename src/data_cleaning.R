@@ -20,6 +20,10 @@ happiness2015 <- read_csv("data/happiness_2015.csv")
 # Clean 2015 data
 ##################
 
+happiness2015[,c(-1, -2)] <-round(happiness2015[,c(-1, -2)], 2)
+happiness2016[,c(-1, -2)] <-round(happiness2016[,c(-1, -2)], 2)
+happiness2017[,c(-1, -2)] <-round(happiness2017[,c(-1, -2)], 2)
+
 ## Get rid of empty spaces in column names
 names(happiness2015) <- c("Country", "Region", "Happiness.Rank", 
                           "Happiness.Score", "Standard.Error", "Economy", 

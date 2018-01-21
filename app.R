@@ -11,15 +11,13 @@ countries_all <- read.csv("results/countries_aggregated.csv", stringsAsFactors =
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
-  titlePanel("World Happiness"),
+  h1("World Happiness"),
   fluidRow(
     column(2,
            br(),
-           p("Make some explanation about the app here"),
-           br(),
-           uiOutput("region"), 
-           uiOutput("country"),
-           hr(), br(),
+           span("This app will help you explore the data behind the ", 
+                tags$a("World Happiness Report.", href = "http://worldhappiness.report")),
+           br(), hr(), br(),
            uiOutput("variable_1"),
            uiOutput("variable_2"),
            hr(), br(),
@@ -36,46 +34,56 @@ ui <- fluidPage(
            sliderInput("filter_Government.Corruption", "Government corruption score", 
                        min = 0, max = 2, value = c(0, 2), step = 0.1),
            sliderInput("filter_Generosity", "Generosity Score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1)
+                       min = 0, max = 2, value = c(0, 2), step = 0.1),
+           br(), hr(),
+           span("Data source:", 
+                tags$a("Kaggle",
+                       href = "https://www.kaggle.com/unsdsn/world-happiness")),
+           br(), br(),
+           em(
+             span("Created by", a(href = "https://nazliozum.github.io/", "Nazlı Özüm Kafaee")),
+             br(),
+             span("Code", a(href = "https://github.com/Nazliozum/world_happiness", "on GitHub"))
+           )
            
     ),
     
+    
+    column(2,
+           br(), br(), br(), br(), br(), br(), br(), br(), 
+           uiOutput("region"), 
+           uiOutput("country")
+    ),
+    
     column(8,
+           actionButton("button2015", "2015"),
+           actionButton("button2016", "2016"),
+           actionButton("button2017", "2017"),
+           br(), br(),
+           
            tabsetPanel(
              tabPanel("Plot",
                       br(),
-                      actionButton("button2015", "2015"),
-                      actionButton("button2016", "2016"),
-                      actionButton("button2017", "2017"),
-                      hr(),
                       plotlyOutput("scatterplot", 
-                                 height = 800),
-                      br(),
-                      DT::dataTableOutput("results_table")
+                                 height = 800)
              ),
              
              tabPanel("Table", 
                       br(),
-                      tableOutput("country_table"),
-                      br(),
-                      fluidRow(
-                        column(6, 
-                               plotOutput("time_series_1")),
-                        column(6, 
-                               plotOutput("time_series_2"))
-                      )
-                      )
+                      DT::dataTableOutput("results_table")
+                      ),
+             
+             tabPanel(textOutput("tab_name_rankings"),
+               h1(textOutput("year_name")),
+               h2("Top 10"),
+               wellPanel( 
+                 dataTableOutput("rank_table_top")),
+               br(), 
+               h2("Bottom 10"),
+               wellPanel(
+                 dataTableOutput("rank_table_bottom"))
+             )
            )
-        ),
-    
-    column(2,
-          wellPanel(
-            h4("Top 10"), 
-            DT::dataTableOutput("rank_table_top")),
-          br(), br(), 
-          wellPanel(
-            h4("Bottom 10"),
-            DT::dataTableOutput("rank_table_bottom"))
         )
 
 )
@@ -83,18 +91,24 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  countries <- reactive({ 
-    df_small <- 
-      countries_all %>% 
-      filter(Region %in% input$region) %>%
-      select(Country) %>% 
-      droplevels()
+  output$variable_1 <- renderUI({
+    selectInput("variable_1", "Y-variable:", 
+                choices = c("Happiness.Rank", "Happiness.Score", "Economy", 
+                            "Family", "Health", "Freedom", "Government.Corruption", 
+                            "Generosity", "Dystopia.Residual"), selected = "Happiness.Score")
+  })
+  
+  
+  output$variable_2 <- renderUI({
+    selectInput("variable_2", "X-variable:", 
+                choices = c("Happiness.Rank", "Happiness.Score", "Economy", 
+                            "Family", "Health", "Freedom", "Government.Corruption", 
+                            "Generosity", "Dystopia.Residual"), selected = "Economy")
+  })
     
-    c("Select All", levels(df_small$Country))
+                            
+  data_year <- reactiveValues(data = happiness2015, year = "2015")
   
-      })
-  
-  data_year <- reactiveValues(data = NULL, year = NULL)
   
   observeEvent(input$button2015, {
     data_year$data <- happiness2015
@@ -110,35 +124,6 @@ server <- function(input, output, session) {
   observeEvent(input$button2017, {
     data_year$data <- happiness2017
     data_year$year <-  "2017"
-  })
-  
-  output$year_name <- renderPrint({ data_year$year })
-  
-  output$region <- renderUI({
-    selectInput("region", "Region:",
-                choices = levels(countries_all$Region), multiple = TRUE,
-                selected = "North America"
-    )
-  })
-  
-  
-  
-  output$country <- renderUI ({
-    if(is.null(input$region))
-      return()
-    
-    selectInput("country", "Select countries:", multiple = TRUE,
-                choices = countries(),
-                selected = c("Canada", "United States")
-    )
-  })
-  
-  observe({
-    if ("Select All" %in% input$country) {
-      # choose all the choices _except_ "Select All"
-      selected_choices <- setdiff(countries(), "Select All")
-      updateSelectInput(session, "country", selected = selected_choices)
-    }
   })
   
   
@@ -173,20 +158,53 @@ server <- function(input, output, session) {
   })
   
   
-  output$variable_1 <- renderUI({
-    selectInput("variable_1", "Y-variable:", 
-                choices = c("Happiness.Rank", "Happiness.Score", "Economy", 
-                            "Family", "Health", "Freedom", "Government.Corruption", 
-                            "Generosity", "Dystopia.Residual"), selected = "Happiness.Score")
+  regions <- reactive({ 
+    c("Select All", levels(countries_all$Region))
   })
   
   
-  output$variable_2 <- renderUI({
-    selectInput("variable_2", "X-variable:", 
-                choices = c("Happiness.Rank", "Happiness.Score", "Economy", 
-                            "Family", "Health", "Freedom", "Government.Corruption", 
-                            "Generosity", "Dystopia.Residual"), selected = "Economy")
+  countries <- reactive({ 
+    df_small <- 
+      countries_all %>% 
+      filter(Region %in% input$region) %>%
+      select(Country) %>% 
+      droplevels()
+    c("Select All", levels(df_small$Country))
   })
+  
+  
+  output$region <- renderUI({
+    selectInput("region", "Select regions:", multiple = TRUE,
+                choices = regions(), 
+                selected = "Select All")
+  })
+  
+  
+  output$country <- renderUI ({
+    if(is.null(input$region))
+      return()
+    selectInput("country", "Select countries:", multiple = TRUE,
+                choices = countries(), 
+                selected = c("Canada", "United States", "Mexico"))
+  })
+
+  
+  observe({
+    if ("Select All" %in% input$country) {
+      # choose all the choices _except_ "Select All"
+      selected_choices <- setdiff(countries(), "Select All")
+      updateSelectInput(session, "country", selected = selected_choices)
+    }
+  })
+  
+  observe({
+    if ("Select All" %in% input$region) {
+      # choose all the choices _except_ "Select All"
+      selected_choices <- setdiff(regions(), "Select All")
+      updateSelectInput(session, "region", selected = selected_choices)
+    }
+  })
+
   
   output$scatterplot <- renderPlotly({
     if (is.null(data_year$data)) return()
@@ -194,7 +212,8 @@ server <- function(input, output, session) {
     # s <-  input$results_table_rows_selected
     
     p <- ggplot(filtered_data()) +
-      geom_point(aes_string(x = input$variable_2, y = input$variable_1, colour = "Region", label = "Country"), size = 3) +
+      geom_point(aes_string(x = input$variable_2, y = input$variable_1, 
+                            colour = "Region", label = "Country"), size = 3) +
       ggtitle(paste0(input$variable_1, " vs. ", input$variable_2)) +
       theme_bw() +
       theme(legend.position = "bottom")
@@ -203,15 +222,38 @@ server <- function(input, output, session) {
   })
   
   
+  output$results_table <- DT::renderDataTable({
+    if (is.null(data_year$data)) {
+      return()
+    } else {
+      filtered_data()
+    }
+  },
+  options = list(lengthChange = FALSE, 
+                 scrollCollapse = TRUE,
+                 scrollX = "100%"),
+  selection = "single"
+  )
+  
+  
+  output$tab_name_rankings <- renderText({ 
+    paste("Happiness Ranking: ", data_year$year) 
+  })
+  
+  
+  output$year_name <- renderText({ 
+    paste("Happiness Ranking in ", data_year$year) 
+  })
+  
+  
   output$rank_table_top <- DT::renderDataTable({
     if (is.null(data_year$data)) {
       return()
     } else {
       data_year$data %>% 
-        arrange(Happiness.Rank) %>% 
-        top_n(10, desc(Happiness.Rank)) %>% 
-        select(Country)
-        
+        mutate(Rank = Happiness.Rank) %>% 
+        arrange(Rank) %>% 
+        top_n(10, desc(Rank))
     }
   },
   options = list(lengthChange = FALSE,
@@ -224,42 +266,23 @@ server <- function(input, output, session) {
       return()
   } else {
     data_year$data %>% 
-      arrange(Happiness.Rank) %>% 
-      top_n(10, Happiness.Rank) %>% 
-      select(Country)
-      
+      mutate(Rank = Happiness.Rank) %>% 
+      arrange(Rank) %>% 
+      top_n(10, Rank)
     }
   },
+  
   options = list(lengthChange = FALSE, 
                  scrollX = "100%")
 )
   
   
-  output$results_table <- DT::renderDataTable({
-    if (is.null(data_year$data)) {
+  output$country <- renderUI ({
+    if(is.null(input$region))
       return()
-    } else {
-    filtered_data()
-      }
-    },
-    options = list(lengthChange = FALSE, 
-                   scrollCollapse = TRUE,
-                   scrollX = "100%"),
-    selection = "single"
-  )
-  
-  
-
-  output$time_series_1 <- renderPlot({
-
-  })
-  
-  output$time_series_2 <- renderPlot({
-    
-  })
-    
-  output$country_table <- renderTable({
-    
+    selectInput("country", "Select countries:", multiple = TRUE,
+                choices = countries(), 
+                selected = c("Canada", "United States", "Mexico"))
   })
   
 }
