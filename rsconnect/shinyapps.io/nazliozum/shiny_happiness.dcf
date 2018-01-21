@@ -5,9 +5,9 @@ account: nazliozum
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 256290
-bundleId: 1185320
+bundleId: 1186014
 url: https://nazliozum.shinyapps.io/shiny_happiness/
-when: 1516528784.37115
+when: 1516572800.13654
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: data/.DS_Store

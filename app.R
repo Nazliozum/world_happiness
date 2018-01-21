@@ -64,6 +64,7 @@ ui <- fluidPage(
            tabsetPanel(
              tabPanel("Plot",
                       br(),
+                      h2(textOutput("year_name_plot")),
                       plotlyOutput("scatterplot", 
                                  height = 800)
              ),
@@ -155,6 +156,11 @@ server <- function(input, output, session) {
         Generosity <= c(input$filter_Generosity)[2]
       ) %>% 
       arrange(Country)
+  })
+  
+  
+  output$year_name_plot <- renderText({ 
+    paste("Data for ", data_year$year) 
   })
   
   
