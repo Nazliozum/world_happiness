@@ -1,4 +1,5 @@
 library(shiny)
+library(markdown)
 library(DT)
 library(ggplot2)
 library(dplyr)
@@ -18,6 +19,10 @@ ui <- navbarPage(
   title = "World Happiness",
   tabPanel("Plot",
     sidebarPanel(width = 3,
+                 br(),
+                 span("This app will help you explore the data behind the ", 
+                      tags$a("World Happiness Report.", href = "http://worldhappiness.report")),
+                 br(), hr(),
            helpText("Select year"),
            actionButton("button2015", "2015"),
            actionButton("button2016", "2016"),
@@ -38,9 +43,7 @@ ui <- navbarPage(
              span("Created by", a(href = "https://nazliozum.github.io/", "Nazlı Özüm Kafaee")),
              br(),
              span("Code", a(href = "https://github.com/Nazliozum/world_happiness", "on GitHub"))
-           )
-           
-    ),
+           )),
     
     mainPanel(
            tabsetPanel(
@@ -67,15 +70,14 @@ ui <- navbarPage(
                  dataTableOutput("rank_table_bottom"))
              )
            )
-        )
+        )),
+  
+    tabPanel("About",
+             includeMarkdown("docs/About.md"))
+  
+      )
+      
 
-      ),
-      tabPanel("About",
-               br(),
-               span("This app will help you explore the data behind the ", 
-                    tags$a("World Happiness Report.", href = "http://worldhappiness.report")),
-               br(), hr(), br())
-)
 
 ##############################################
 ### SERVER STARTS HERE #######################
@@ -147,7 +149,7 @@ server <- function(input, output, session) {
     selectInput("country", "Countries:", 
                 multiple = TRUE,
                 choices = countries(), 
-                selected = c("Canada", "United States", "Mexico"),
+                selected = "Select All",
                 selectize = FALSE,
                 size = 10)
   })
