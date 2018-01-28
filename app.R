@@ -3,38 +3,32 @@ library(DT)
 library(ggplot2)
 library(dplyr)
 library(plotly)
+library(shinythemes)
 
 happiness2015 <- read.csv("results/happiness_2015_clean.csv", stringsAsFactors = TRUE)
 happiness2016 <- read.csv("results/happiness_2016_clean.csv", stringsAsFactors = TRUE)
 happiness2017 <- read.csv("results/happiness_2017_clean.csv", stringsAsFactors = TRUE)
 countries_all <- read.csv("results/countries_aggregated.csv", stringsAsFactors = TRUE)
 
+
+
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-  h1("World Happiness"),
-  fluidRow(
-    column(2,
-           br(),
-           span("This app will help you explore the data behind the ", 
-                tags$a("World Happiness Report.", href = "http://worldhappiness.report")),
-           br(), hr(), br(),
+ui <- navbarPage(
+  theme = shinytheme("journal"),
+  title = "World Happiness",
+  tabPanel("Plot",
+    sidebarPanel(width = 3,
+           helpText("Select year"),
+           actionButton("button2015", "2015"),
+           actionButton("button2016", "2016"),
+           actionButton("button2017", "2017"),
+           br(), br(), 
+           helpText("Choose variables you want to see on the plot"),
            uiOutput("variable_1"),
            uiOutput("variable_2"),
-           hr(), br(),
-           sliderInput("filter_Happiness.Score", "Happiness Score", 
-                       min = 0, max = 10, value = c(0, 10), step = 0.1),
-           sliderInput("filter_Economy", "Economy score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
-           sliderInput("filter_Family", "Family score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
-           sliderInput("filter_Health", "Health score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
-           sliderInput("filter_Freedom", "Freedom score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
-           sliderInput("filter_Government.Corruption", "Government corruption score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
-           sliderInput("filter_Generosity", "Generosity Score", 
-                       min = 0, max = 2, value = c(0, 2), step = 0.1),
+           br(),
+           helpText("Click while pressing `command` in order to choose multiple countries"),
+           uiOutput("country"),
            br(), hr(),
            span("Data source:", 
                 tags$a("Kaggle",
@@ -48,19 +42,7 @@ ui <- fluidPage(
            
     ),
     
-    
-    column(2,
-           br(), br(), br(), br(), br(), br(), br(), br(), 
-           uiOutput("region"), 
-           uiOutput("country")
-    ),
-    
-    column(8,
-           actionButton("button2015", "2015"),
-           actionButton("button2016", "2016"),
-           actionButton("button2017", "2017"),
-           br(), br(),
-           
+    mainPanel(
            tabsetPanel(
              tabPanel("Plot",
                       br(),
@@ -87,8 +69,17 @@ ui <- fluidPage(
            )
         )
 
+      ),
+      tabPanel("About",
+               br(),
+               span("This app will help you explore the data behind the ", 
+                    tags$a("World Happiness Report.", href = "http://worldhappiness.report")),
+               br(), hr(), br())
 )
-)
+
+##############################################
+### SERVER STARTS HERE #######################
+##############################################
 
 server <- function(input, output, session) {
   
@@ -130,31 +121,7 @@ server <- function(input, output, session) {
   
   filtered_data <- reactive({
     data_year$data %>% 
-      filter(
-        Region %in% c(input$region),
-        Country %in% c(input$country),
-        
-        Happiness.Score >= c(input$filter_Happiness.Score)[1],
-        Happiness.Score <= c(input$filter_Happiness.Score)[2],
-        
-        Economy >= c(input$filter_Economy)[1],
-        Economy <= c(input$filter_Economy)[2],
-        
-        Family >= c(input$filter_Family)[1],
-        Family <= c(input$filter_Family)[2],
-        
-        Health >= c(input$filter_Health)[1],
-        Health <= c(input$filter_Health)[2],
-        
-        Freedom >= c(input$filter_Freedom)[1],
-        Freedom <= c(input$filter_Freedom)[2],
-        
-        Government.Corruption >= c(input$filter_Government.Corruption)[1],
-        Government.Corruption <= c(input$filter_Government.Corruption)[2],
-        
-        Generosity >= c(input$filter_Generosity)[1],
-        Generosity <= c(input$filter_Generosity)[2]
-      ) %>% 
+      filter(Country %in% c(input$country)) %>% 
       arrange(Country)
   })
   
@@ -164,34 +131,25 @@ server <- function(input, output, session) {
   })
   
   
-  regions <- reactive({ 
-    c("Select All", levels(countries_all$Region))
-  })
-  
-  
   countries <- reactive({ 
     df_small <- 
       countries_all %>% 
-      filter(Region %in% input$region) %>%
       select(Country) %>% 
       droplevels()
+    
     c("Select All", levels(df_small$Country))
-  })
-  
-  
-  output$region <- renderUI({
-    selectInput("region", "Select regions:", multiple = TRUE,
-                choices = regions(), 
-                selected = "Select All")
+    
   })
   
   
   output$country <- renderUI ({
-    if(is.null(input$region))
-      return()
-    selectInput("country", "Select countries:", multiple = TRUE,
+  
+    selectInput("country", "Countries:", 
+                multiple = TRUE,
                 choices = countries(), 
-                selected = c("Canada", "United States", "Mexico"))
+                selected = c("Canada", "United States", "Mexico"),
+                selectize = FALSE,
+                size = 10)
   })
 
   
@@ -202,20 +160,10 @@ server <- function(input, output, session) {
       updateSelectInput(session, "country", selected = selected_choices)
     }
   })
-  
-  observe({
-    if ("Select All" %in% input$region) {
-      # choose all the choices _except_ "Select All"
-      selected_choices <- setdiff(regions(), "Select All")
-      updateSelectInput(session, "region", selected = selected_choices)
-    }
-  })
 
   
   output$scatterplot <- renderPlotly({
     if (is.null(data_year$data)) return()
-    
-    # s <-  input$results_table_rows_selected
     
     p <- ggplot(filtered_data()) +
       geom_point(aes_string(x = input$variable_2, y = input$variable_1, 
@@ -224,7 +172,7 @@ server <- function(input, output, session) {
       theme_bw() +
       theme(legend.position = "bottom")
     
-    ggplotly(p, tooltip = c("label", "x", "y")) 
+    ggplotly(p, tooltip = c("label", "x", "y"), height = 500) 
   })
   
   
@@ -281,15 +229,6 @@ server <- function(input, output, session) {
   options = list(lengthChange = FALSE, 
                  scrollX = "100%")
 )
-  
-  
-  output$country <- renderUI ({
-    if(is.null(input$region))
-      return()
-    selectInput("country", "Select countries:", multiple = TRUE,
-                choices = countries(), 
-                selected = c("Canada", "United States", "Mexico"))
-  })
   
 }
 
